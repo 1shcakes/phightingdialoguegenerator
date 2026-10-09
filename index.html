@@ -3,35 +3,43 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-  <title>voice keyboard</title>
+  <title>Phighting Dialogue Generator</title>
 </head>
 <body>
   <textarea id="typeInput" placeholder="start typing here…" rows="8" cols="50" autofocus></textarea>
   <br>
   <select id="voiceSelect">
     <option value="https://static.wikitide.net/phightingwiki/f/f4/SwordDialogue.mp3" selected>Sword</option>
-    <option value="Voice2.mp3">Voice 2</option>
-    <option value="Voice3.mp3">Voice 3</option>
-    <option value="Voice4.mp3">Voice 4</option>
-    <option value="Voice5.mp3">Voice 5</option>
-    <option value="Voice6.mp3">Voice 6</option>
-    <option value="Voice7.mp3">Voice 7</option>
-    <option value="Voice8.mp3">Voice 8</option>
-    <option value="Voice9.mp3">Voice 9</option>
-    <option value="Voice10.mp3">Voice 10</option>
-    <option value="Voice11.mp3">Voice 11</option>
-    <option value="Voice12.mp3">Voice 12</option>
-    <option value="Voice13.mp3">Voice 13</option>
-    <option value="Voice14.mp3">Voice 14</option>
-    <option value="Voice15.mp3">Voice 15</option>
+    <option value="https://static.wikitide.net/phightingwiki/e/ee/SkateboardDialogue.mp3">Skateboard</option>
+    <option value="https://static.wikitide.net/phightingwiki/5/5f/BiograftDialogue.mp3">Biograft</option>
+    <option value="https://static.wikitide.net/phightingwiki/3/3a/KatanaDialogue.mp3">Katana</option>
+    <option value="https://static.wikitide.net/phightingwiki/b/b7/SFX_Ban_Hammer_Dialogue.mp3">Ban Hammer</option>
+    <option value="https://static.wikitide.net/phightingwiki/9/9e/RocketDialogue.mp3">Rocket</option>
+    <option value="https://static.wikitide.net/phightingwiki/c/c3/SlingshotDialogue.mp3">Slingshot</option>
+    <option value="https://static.wikitide.net/phightingwiki/d/dd/HyperlaserDialogueNew.ogg">Hyperlaser (GLITCHY)</option>
+    <option value="https://static.wikitide.net/phightingwiki/8/8d/ShurikenDialogue.mp3">Shuriken</option>
+    <option value="https://static.wikitide.net/phightingwiki/8/8f/SFX_Scythe_Dialogue.mp3">Scythe</option>
+    <option value="https://static.wikitide.net/phightingwiki/4/4e/MedkitDialogue.mp3">Medkit</option>
+    <option value="https://static.wikitide.net/phightingwiki/e/eb/BoomboxDialogue.mp3">Boombox</option>
+    <option value="https://static.wikitide.net/phightingwiki/c/c6/SubspaceDialogue.mp3">Subspace</option>
+    <option value="https://static.wikitide.net/phightingwiki/4/42/SFX_Vine_Staff_Dialogue.mp3">Vine Staff</option>
+    <option value="https://static.wikitide.net/phightingwiki/7/7b/SFX_Coil_Dialogue.mp3">Coil</option>
   </select>
+  <br>
+  <label for="speedSlider">Speed Delay (ms): </label>
+  <input type="range" id="speedSlider" min="20" max="300" value="70">
+  <span id="speedVal">70ms</span>
+  <br>
+  <button id="playBtn">Auto Play</button>
+  <br>
+  <div id="outputDisplay"></div>
   <br>
   <span id="statusMsg">ready</span>
 
 <script>
   (function() {
     // ============================================================
-    // 🎲 RANDOM PITCH RULES
+    // pitch rules
     // ============================================================
     const PITCH_MIN = 0.5;
     const PITCH_MAX = 1.8;
@@ -41,11 +49,21 @@
 
     const typeInput = document.getElementById('typeInput');
     const voiceSelect = document.getElementById('voiceSelect');
+    const speedSlider = document.getElementById('speedSlider');
+    const speedVal = document.getElementById('speedVal');
+    const playBtn = document.getElementById('playBtn');
+    const outputDisplay = document.getElementById('outputDisplay');
     const statusMsg = document.getElementById('statusMsg');
 
     let audioCtx = null;
     let audioBuffer = null;
     let loadedVoiceUrl = null;
+    let isPlaying = false;
+    let playTimeoutId = null;
+
+    speedSlider.addEventListener('input', () => {
+      speedVal.textContent = speedSlider.value + 'ms';
+    });
 
     function getAudioContext() {
       if (!audioCtx) {
@@ -65,12 +83,12 @@
       if (!url) {
         audioBuffer = null;
         loadedVoiceUrl = null;
-        statusMsg.textContent = 'voice not available';
+        statusMsg.textContent = 'voice not available. :C';
         return;
       }
       if (loadedVoiceUrl === url && audioBuffer) return;
 
-      statusMsg.textContent = 'loading…';
+      statusMsg.textContent = 'loading!!!';
 
       try {
         const res = await fetch(url);
@@ -79,12 +97,12 @@
         const ctx = getAudioContext();
         audioBuffer = await ctx.decodeAudioData(arrayBuffer);
         loadedVoiceUrl = url;
-        statusMsg.textContent = 'ready — start typing';
+        statusMsg.textContent = 'ready! :D';
       } catch (e) {
         console.warn('Load failed:', e);
         audioBuffer = null;
         loadedVoiceUrl = null;
-        statusMsg.textContent = 'could not load — check the URL';
+        statusMsg.textContent = 'ERROR! pls check the url!';
       }
     }
 
@@ -109,11 +127,9 @@
       const source = ctx.createBufferSource();
       source.buffer = audioBuffer;
 
-      // 🎲 RANDOM PITCH
       const pitch = randomBetween(PITCH_MIN, PITCH_MAX);
       source.playbackRate.value = pitch;
 
-      // 🎲 RANDOM VOLUME
       const vol = randomBetween(VOLUME_MIN, VOLUME_MAX);
       const gain = ctx.createGain();
       gain.gain.value = vol;
@@ -124,20 +140,18 @@
       const offset = Math.random() * 0.05;
       source.start(0, offset, 0.15);
 
-      console.log('🎵 pitch:', pitch.toFixed(2), '| volume:', vol.toFixed(2));
-
       source.onended = () => {
         source.disconnect();
         gain.disconnect();
       };
     }
 
+    // Manual typing
     let lastLength = 0;
 
     typeInput.addEventListener('input', () => {
       const newLength = typeInput.value.length;
 
-      // Play sound for EVERY added character — spaces, newlines, everything
       if (newLength > lastLength) {
         playSound();
       }
@@ -145,7 +159,63 @@
       lastLength = newLength;
     });
 
-    // Unlock audio on first interaction (required on mobile)
+    // Auto Play typewriter logic
+    playBtn.addEventListener('click', async () => {
+      await unlockAudio();
+
+      if (isPlaying) {
+        // Stop current playback
+        isPlaying = false;
+        clearTimeout(playTimeoutId);
+        playBtn.textContent = 'Auto Play';
+        return;
+      }
+
+      const text = typeInput.value;
+      if (!text) return;
+
+      isPlaying = true;
+      playBtn.textContent = 'Stop';
+      outputDisplay.textContent = '';
+
+      let index = 0;
+      const baseDelay = parseInt(speedSlider.value, 10);
+
+      function typeNextChar() {
+        if (!isPlaying || index >= text.length) {
+          isPlaying = false;
+          playBtn.textContent = 'Auto Play';
+          return;
+        }
+
+        const currentChar = text[index];
+        outputDisplay.textContent += currentChar;
+        playSound();
+
+        // pauses
+        let delayMultiplier = 1;
+
+        if (currentChar === ',' || currentChar === ';' || currentChar === ':') {
+          delayMultiplier = 3.5;
+        } else if (currentChar === '.' || currentChar === '!' || currentChar === '?') {
+          const isEllipsis = text.slice(index, index + 3) === '...' || 
+                             (index >= 1 && text.slice(index - 1, index + 2) === '...') ||
+                             (index >= 2 && text.slice(index - 2, index + 1) === '...');
+          
+          if (isEllipsis) {
+            delayMultiplier = 3.0;
+          } else {
+            delayMultiplier = 5.0;
+          }
+        }
+
+        index++;
+        playTimeoutId = setTimeout(typeNextChar, baseDelay * delayMultiplier);
+      }
+
+      typeNextChar();
+    });
+
     typeInput.addEventListener('focus', unlockAudio, { once: true });
     typeInput.addEventListener('touchstart', unlockAudio, { once: true });
     document.body.addEventListener('click', unlockAudio, { once: true });
