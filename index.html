@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+  <title>voice keyboard</title>
+</head>
+<body>
+  <textarea id="typeInput" placeholder="start typing here…" rows="8" cols="50" autofocus></textarea>
+  <br>
+  <select id="voiceSelect">
+    <option value="https://static.wikitide.net/phightingwiki/f/f4/SwordDialogue.mp3" selected>Sword</option>
+    <option value="Voice2.mp3">Voice 2</option>
+    <option value="Voice3.mp3">Voice 3</option>
+    <option value="Voice4.mp3">Voice 4</option>
+    <option value="Voice5.mp3">Voice 5</option>
+    <option value="Voice6.mp3">Voice 6</option>
+    <option value="Voice7.mp3">Voice 7</option>
+    <option value="Voice8.mp3">Voice 8</option>
+    <option value="Voice9.mp3">Voice 9</option>
+    <option value="Voice10.mp3">Voice 10</option>
+    <option value="Voice11.mp3">Voice 11</option>
+    <option value="Voice12.mp3">Voice 12</option>
+    <option value="Voice13.mp3">Voice 13</option>
+    <option value="Voice14.mp3">Voice 14</option>
+    <option value="Voice15.mp3">Voice 15</option>
+  </select>
+  <br>
+  <span id="statusMsg">ready</span>
+
+<script>
+  (function() {
+    // ============================================================
+    // 🎲 RANDOM PITCH RULES
+    // ============================================================
+    const PITCH_MIN = 0.5;
+    const PITCH_MAX = 1.8;
+    const VOLUME_MIN = 0.35;
+    const VOLUME_MAX = 0.7;
+    // ============================================================
+
+    const typeInput = document.getElementById('typeInput');
+    const voiceSelect = document.getElementById('voiceSelect');
+    const statusMsg = document.getElementById('statusMsg');
+
+    let audioCtx = null;
+    let audioBuffer = null;
+    let loadedVoiceUrl = null;
+
+    function getAudioContext() {
+      if (!audioCtx) {
+        audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+      }
+      return audioCtx;
+    }
+
+    async function unlockAudio() {
+      const ctx = getAudioContext();
+      if (ctx.state === 'suspended') {
+        try { await ctx.resume(); } catch (e) {}
+      }
+    }
+
+    async function loadVoice(url) {
+      if (!url) {
+        audioBuffer = null;
+        loadedVoiceUrl = null;
+        statusMsg.textContent = 'voice not available';
+        return;
+      }
+      if (loadedVoiceUrl === url && audioBuffer) return;
+
+      statusMsg.textContent = 'loading…';
+
+      try {
+        const res = await fetch(url);
+        if (!res.ok) throw new Error('HTTP ' + res.status);
+        const arrayBuffer = await res.arrayBuffer();
+        const ctx = getAudioContext();
+        audioBuffer = await ctx.decodeAudioData(arrayBuffer);
+        loadedVoiceUrl = url;
+        statusMsg.textContent = 'ready — start typing';
+      } catch (e) {
+        console.warn('Load failed:', e);
+        audioBuffer = null;
+        loadedVoiceUrl = null;
+        statusMsg.textContent = 'could not load — check the URL';
+      }
+    }
+
+    loadVoice(voiceSelect.value);
+
+    voiceSelect.addEventListener('change', () => {
+      loadVoice(voiceSelect.value);
+    });
+
+    function randomBetween(min, max) {
+      return min + Math.random() * (max - min);
+    }
+
+    function playSound() {
+      if (!audioBuffer) return;
+
+      const ctx = getAudioContext();
+      if (ctx.state !== 'running') {
+        ctx.resume().catch(() => {});
+      }
+
+      const source = ctx.createBufferSource();
+      source.buffer = audioBuffer;
+
+      // 🎲 RANDOM PITCH
+      const pitch = randomBetween(PITCH_MIN, PITCH_MAX);
+      source.playbackRate.value = pitch;
+
+      // 🎲 RANDOM VOLUME
+      const vol = randomBetween(VOLUME_MIN, VOLUME_MAX);
+      const gain = ctx.createGain();
+      gain.gain.value = vol;
+
+      source.connect(gain);
+      gain.connect(ctx.destination);
+
+      const offset = Math.random() * 0.05;
+      source.start(0, offset, 0.15);
+
+      console.log('🎵 pitch:', pitch.toFixed(2), '| volume:', vol.toFixed(2));
+
+      source.onended = () => {
+        source.disconnect();
+        gain.disconnect();
+      };
+    }
+
+    let lastLength = 0;
+
+    typeInput.addEventListener('input', () => {
+      const newLength = typeInput.value.length;
+
+      // Play sound for EVERY added character — spaces, newlines, everything
+      if (newLength > lastLength) {
+        playSound();
+      }
+
+      lastLength = newLength;
+    });
+
+    // Unlock audio on first interaction (required on mobile)
+    typeInput.addEventListener('focus', unlockAudio, { once: true });
+    typeInput.addEventListener('touchstart', unlockAudio, { once: true });
+    document.body.addEventListener('click', unlockAudio, { once: true });
+
+  })();
+</script>
+</body>
+</html>
