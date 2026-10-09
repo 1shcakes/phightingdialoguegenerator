@@ -16,7 +16,7 @@
     <option value="https://static.wikitide.net/phightingwiki/b/b7/SFX_Ban_Hammer_Dialogue.mp3">Ban Hammer</option>
     <option value="https://static.wikitide.net/phightingwiki/9/9e/RocketDialogue.mp3">Rocket</option>
     <option value="https://static.wikitide.net/phightingwiki/c/c3/SlingshotDialogue.mp3">Slingshot</option>
-    <option value="https://static.wikitide.net/phightingwiki/d/dd/HyperlaserDialogueNew.ogg">Hyperlaser (GLITCHY)</option>
+    <option value="https://static.wikitide.net/phightingwiki/d/dd/HyperlaserDialogueNew.ogg">Hyperlaser</option>
     <option value="https://static.wikitide.net/phightingwiki/8/8d/ShurikenDialogue.mp3">Shuriken</option>
     <option value="https://static.wikitide.net/phightingwiki/8/8f/SFX_Scythe_Dialogue.mp3">Scythe</option>
     <option value="https://static.wikitide.net/phightingwiki/4/4e/MedkitDialogue.mp3">Medkit</option>
@@ -136,9 +136,8 @@
 
       source.connect(gain);
       gain.connect(ctx.destination);
-
-      const offset = Math.random() * 0.05;
-      source.start(0, offset, 0.15);
+      
+      source.start(0);
 
       source.onended = () => {
         source.disconnect();
